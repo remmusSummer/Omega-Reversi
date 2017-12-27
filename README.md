@@ -1,5 +1,6 @@
 # Omega-Reversi
-A Reversi game using reforcement learning and MCTS, modify from https://github.com/junxiaosong/AlphaZero_Gomoku.git
+A Reversi game using reforcement learning and MCTS,
+modify from https://github.com/junxiaosong/AlphaZero_Gomoku.git <br />
 Still working in progress
 
 ## Dependencies
