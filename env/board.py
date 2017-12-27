@@ -47,11 +47,11 @@ class Board(object):
         self.windoeSurface.fill(BACKGROUNDCOLOR)
         self.windoeSurface.blit(boardImage, boardRect, boardRect)
 
-        self.resetBoard()
+        self.reset_board()
 
     def set_caption(self, caption):
         pygame.display.set_caption(caption)
-    def resetBoard(self):
+    def reset_board(self):
         for x in range (ROW):
             for y in range (COL):
                 self.map[x][y] = 0
@@ -66,18 +66,18 @@ class Board(object):
         self._move(4,4)
         self._move(4,3)
 
-    def getNewBoard(self):
+    def get_new_board(self):
         self.map = []
         for i in range (ROW):
             self.map.append([0] * 8)
         return self.map
 
-    def isOnBoard(self,x, y):
+    def _is_on_board(self,x, y):
         return x >=0 and x <= 7 and y >= 0 and y <= 7
 
-    def isVaildMove(self,chess, xstart, ystart):
+    def is_vaild_move(self,chess, xstart, ystart):
         #if the chess is out of board or the position is already have a chess
-        if not self.isOnBoard(xstart, ystart) or self.map[xstart][ystart] != 0:
+        if not self._is_on_board(xstart, ystart) or self.map[xstart][ystart] != 0:
             return False
     
         #put the chess temporally
@@ -95,19 +95,19 @@ class Board(object):
             x, y = xstart, ystart
             x += xdire
             y += ydire
-            if self.isOnBoard(x, y) and self.map[x][y] == otherChess:
+            if self._is_on_board(x, y) and self.map[x][y] == otherChess:
                 x += xdire
                 y += ydire
-                if not self.isOnBoard(x, y):
+                if not self._is_on_board(x, y):
                     continue
                 #untile it reach the position where not the opponent's chess
                 while self.map[x][y] == otherChess:
                     x += xdire
                     y += ydire
-                    if not self.isOnBoard(x, y):
+                    if not self._is_on_board(x, y):
                         break
                 #out of board
-                if not self.isOnBoard(x, y):
+                if not self._is_on_board(x, y):
                     continue
                 #own chess
                 if self.map[x][y] == chess:
@@ -128,16 +128,16 @@ class Board(object):
     
         return chessToFlip
     #get the valid position
-    def getValidMoves(self,chess):
+    def get_valid_moves(self,chess):
         validMoves = []
         for x in range(ROW):
             for y in range(COL):
-                if self.isVaildMove(chess, x, y) != False:
+                if self.is_vaild_move(chess, x, y) != False:
                     validMoves.append([x, y])
         return validMoves
 
     #get the score of black and white
-    def getScore(self):
+    def get_score(self):
         blackScore = 0
         whiteScore = 0
         for x in range(ROW):
@@ -166,8 +166,8 @@ class Board(object):
             return -1 
         return move
 
-    def makeMove(self,chess, xstart, ystart):
-        chessToFlip = self.isVaildMove(chess, xstart, ystart)
+    def make_move(self,chess, xstart, ystart):
+        chessToFlip = self.is_vaild_move(chess, xstart, ystart)
         if chessToFlip ==  False:
             return False
 
@@ -178,19 +178,19 @@ class Board(object):
 
     
 
-    def isOnCorner(x, y):
+    def is_on_corner(x, y):
         return (x == 0 and y == 0) or (x == 7 and y == 7) or (x == 0 and y ==7) or (x ==7 and y == 0)
 
     #check if the board have empty space
-    def isGameOver(self):
+    def is_game_over(self):
         for x in range(ROW):
             for y in range(COL):
                 if self.map[x][y] == 0:
                     return False
         return True
 
-    def judgeWinner(self):
-        score = self.getScore()
+    def judge_winner(self):
+        score = self.get_score()
         blackScore = score['black']
         whiteScore = score['white']
         if blackScore > whiteScore:
@@ -198,14 +198,14 @@ class Board(object):
         else: 
             return 'white'
 
-    def setReadableTurns(self, readableTurns):
+    def set_readable_turns(self, readableTurns):
         self.readableTurns = readableTurns
 
     def _move(self, col, row):
 
         nextTurn = [*(self.players - set([self.currentTurn]))][0]
-        if self.makeMove(self.currentTurn, col, row) == True:
-            if self.getValidMoves(nextTurn) != []:
+        if self.make_move(self.currentTurn, col, row) == True:
+            if self.get_valid_moves(nextTurn) != []:
                 self.currentTurn = nextTurn
         
         for x in range(ROW):
@@ -220,29 +220,29 @@ class Board(object):
         x, y = self.move_to_location(move)
         self._move(x, y)
 
-    def printResult(self):
-        blackScore = self.getScore()['black']
-        whiteScore = self.getScore()['white']
+    def print_result(self):
+        blackScore = self.get_score()['black']
+        whiteScore = self.get_score()['white']
 
         gameOverStr = "Score "
 
-        outputStr = gameOverStr + str(blackScore)+ ":" + str(whiteScore) +", Winner:" + self.judgeWinner()
+        outputStr = gameOverStr + str(blackScore)+ ":" + str(whiteScore) +", Winner:" + self.judge_winner()
         text = self.basicFront.render(outputStr, True, (0, 0, 0), (0, 0, 255))
         textRect = text.get_rect()
         textRect.centerx = self.windoeSurface.get_rect().centerx
         textRect.centery = self.windoeSurface.get_rect().centery
         self.windoeSurface.blit(text, textRect)
 
-    def updateBoard(self):
+    def update_board(self):
         pygame.display.update()  
         self.mainClock.tick(FPS)
     
-    def getCurrentTurn(self):
+    def get_current_player(self):
         return self.currentTurn
 
-    def gameEnd(self):
-        if self.isGameOver():
-            winner = self.judgeWinner()
+    def game_end(self):
+        if self.is_game_over():
+            winner = self.judge_winner()
             return True, winner
         else:
             return False, None
@@ -273,12 +273,13 @@ class Game(object):
 
                 if event.type == MOUSEBUTTONDOWN and event.button == 1:
                     location = pygame.mouse.get_pos()
+                    #when using AI, we only got action in a one dimention array
                     self.board.move_chess(self.board.location_to_move(location))
 
-                if self.board.isGameOver():
-                    self.board.printResult()
+                if self.board.is_game_over():
+                    self.board.print_result()
             
-            self.board.updateBoard()
+            self.board.update_board()
 
     
 if __name__ == '__main__':
