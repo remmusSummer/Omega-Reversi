@@ -1,0 +1,121 @@
+"""
+A pure implementation of Monte Carlo Tree Search
+"""
+
+import numpy as np
+import copy
+from operator import itemgetter
+
+def rollout_policy_fn(board):
+    """
+    A coarse, fast version of policy_fn used in the rollout phase.
+    """ 
+    # rollout randomly
+    # Todo:board.avalible action_probs = np.random.rand(len(board.avalible))
+    # return zip(board.avalible, action_probs)
+
+def policy_value_fn(board):
+    """
+    A function that takes in a state and output a list of (action, probality) tuples
+    and a score for the state
+    """
+    # return uniform probabilities and 0 score for pure MCTS
+    #Todo: board.avalible action_probs = np.ones(len(board.avalible))/len(board.avalible)
+    # return zip(board.avalible, action_probs), 0
+
+class TreeNode(object):
+    """
+    A node in the MCTS tree. Each node keeps track of its own value Q. prior probability P, 
+    and its visit-count-adjusted prior score u.
+    """ 
+
+    def __init__(self, parent, prior_p):
+        self._parent = parent
+        self._children = {} # a map from action to TreeNode
+        self._n_visit = 0
+        self._Q = 0
+        self._u = 0
+        self._p = prior_p
+
+    def expand(self, action_priors):
+        """
+        Expand tree by creating new childen
+        action_priors -- output from policy function - a list of tuples of actions
+        and their prior probability according to the policy function.
+        """
+        for action, prob in action_priors:
+            if action not in self._children:
+                self._children[action] = TreeNode(self,prob)
+    
+    def select(self, c_puct):        
+    """
+    Select action among children that gives maximum action value, Q plus bonus u(P).
+    Returns：
+    A tuple of (action, next_node)
+    """
+        return max(self._children.iteritems(), key = lambda act_node[1].get_value(c_puct))
+
+    def update(self, leaf_value):
+        """
+        update node values from leaf evaluation
+        leaf_value: the value of subtree evaluation from the current player's perspective
+        """
+        #count visit
+        self._n_visit += 1
+        # update Q, average of values for all visits
+        self._Q += 1.0*(leaf_value - self._Q) / self._n_visit
+    
+    def update_recursive(self, leaf_value):
+        """
+        apply update recursively to all ancestors.
+        """
+        if self._parent:
+            self._parent.update_recursive(-leaf_value)
+        self.update(leaf_value)
+
+    def get_value(self, c_puct):
+        """
+        Calculate and return the value for this node: a combanation of leaf evaluations, Q
+        and this node's prior adjusted for its visit count, u
+        c_puct -- a number in (0, inf) controlling the relative impact of values, Q, 
+        and prior probability, P, on this node's score
+        """
+        self._u = c_puct * self._p * np.sqrt(self._parent._n_visit)/(1 + self._n_visit)
+        return self._Q + self._u
+
+    def is_leaf(self):
+        """
+        Check if it's a leaf node
+        """
+        return self._children == {}
+
+    def is_root(self):
+        return self._parent is None
+
+
+class MCTS(object):
+    """
+    Simple implementation of Monte Carlo Tree Search
+    """
+    def __init__(self, policy_value_fn, c_puct = 5, n_playout = 10000):
+        """
+        policy_value_fn: a function that takes in a board state and outputs a list of(action, probality)
+        tuples and also a score in [-1, 1](the expected value of the end game score from the current player's perspective)
+        for the current player.
+        c_puct: a number in (0, inf) that controls how quickly exploration converges to the maximum-value policy,
+        where a higher value means relying on the prior more
+        """
+        self._root = TreeNode(None, 1.0)
+        self._policy = policy_value_fn
+        self._c_puct = c_puct
+        self._n_playout = n_playout
+
+    def _playout(self, state):
+        """
+        Run a single playout from the root to the leaf, getting a value at the leaf and
+        propagating it back through its parents. State is modified in-place, so a copy must be
+        provided.
+        Arguments:
+        state -- a copy of the state.
+        """
+        
