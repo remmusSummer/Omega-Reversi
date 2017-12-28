@@ -11,8 +11,9 @@ def rollout_policy_fn(board):
     A coarse, fast version of policy_fn used in the rollout phase.
     """ 
     # rollout randomly
-    # Todo:board.avalible action_probs = np.random.rand(len(board.avalible))
-    # return zip(board.avalible, action_probs)
+    avalible = board.get_avalible_move()
+    action_probs = np.random.rand(len(avalible))
+    return zip(avalible, action_probs)
 
 def policy_value_fn(board):
     """
@@ -20,8 +21,9 @@ def policy_value_fn(board):
     and a score for the state
     """
     # return uniform probabilities and 0 score for pure MCTS
-    #Todo: board.avalible action_probs = np.ones(len(board.avalible))/len(board.avalible)
-    # return zip(board.avalible, action_probs), 0
+    avalible = board.get_avalible_move()
+    action_probs = np.ones(len(avalible))/len(avalible)
+    return zip(avalible, action_probs), 0
 
 class TreeNode(object):
     """
@@ -118,4 +120,85 @@ class MCTS(object):
         Arguments:
         state -- a copy of the state.
         """
+        node = self._root
+        while(True):
+            if node.is_leaf():
+                break
+            action, node = node.select(self._c_puct)
+            state.move_chess(action)
         
+        action_probs, _ = self._policy(state)
+        # check for end of the game
+        end, winner = state.game_end()
+        if not end:
+            node.expand(action_probs)
+        # evaluate the leaf node by random rollout
+        leaf_value = self._evaluate_rollout(state)
+        # update value and visit count of nodes in this traversal
+        node.update_recursive(-leaf_value)
+        
+    def _evaluate_rollout(self, state, limit = 1000):
+        """
+        Use the rollout policy to play until the end of the game, returning +1 of the currnt player wins,
+        -1 if the oppnent wins, and 0 if it is a tie
+        """
+        player = state.get_current_player()
+        for i in range(limit):
+            end, winner = state.game_end()
+            if end:
+                break
+            action_probs = rollout_policy_fn(state)
+            max_action = max(action_probs, key = itemgetter(1))[0]
+            #Todo state.do_move(max_action)
+        else:
+            print("WARNING: rollout reached move limit")
+        if winner == -1:
+            return 0
+        else:
+            return 1 if winner == player else -1
+
+    def get_move(self, state):
+        """
+        Run all playout sequencially, return the most frequent visited action.
+        state: the current state, including both game state and the current player
+        """   
+        for n in range(self._n_playout):
+            state_copy = copy.deepcopy(state)
+            self._playout(state_copy)
+        return max(self._root._children.iteritems(), key=lambda act_node:act_node[1]._n_visit)
+    
+    def update_with_move(self, last_move):
+        """
+        Step forward in the tree
+        """
+        if last_move in self._root._children:
+            self._root = self._root._children[last_move]
+            self._root._parent = None
+        else:
+            self._root = TreeNode(None, 1.0)
+
+    def __str__(self):
+        return "MCTS"
+
+class MCTSPlayer(object):
+    """
+    AI player based on MCTS
+    """
+    def __init__(self, c_puct = 5, n_playout=2000):
+        self.mcts = MCTS(policy_value_fn, c_puct, n_playout)
+
+    def set_player_ind(self, p):
+        self.player = p
+
+    def reset_player(self, board):
+        avalible = board.get_avalible_move()
+        sensible_move = avalible
+        if len(sensible_move) > 0:
+            move = self.mcts.get_move(board)
+            self.mcts.update_with_move(-1)
+            return move
+        else:
+            print("WARNING: the board is full")
+    
+    def __str__(self):
+        return "MCTS {}".format(self.player)

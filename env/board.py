@@ -15,7 +15,7 @@ BOARDY = 0
 class Board(object):
 
     #terminal function
-    def __init__(self):
+    def __init__(self, width = ROW, height = COL):
         self.game = pygame.init()
         self.mainClock = pygame.time.Clock()
         # set every position in the borad to 0
@@ -135,6 +135,15 @@ class Board(object):
                 if self.is_vaild_move(chess, x, y) != False:
                     validMoves.append([x, y])
         return validMoves
+
+    # get the avalible move for policy value net
+    def get_avalible_move(self):
+        locations = self.get_valid_moves(self.currentTurn)
+        avalibleMove = []
+        for location in locations:
+            avalibleMove.append(self.location_to_move(location))
+        
+        return location
 
     #get the score of black and white
     def get_score(self):

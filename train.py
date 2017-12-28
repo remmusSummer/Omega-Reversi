@@ -78,7 +78,7 @@ class TrainPipline():
         mini_batch = random.sample(self.data_buffer, self.batch_size)
         state_batch = [data[0] for data in mini_batch]
         mcts_probs_batch = [data[1] for data in mini_batch]
-        winner_batch = [data[2] fot data in mini_batch]
+        winner_batch = [data[2] for data in mini_batch]
         old_probs, old_v = self.policy_value_net.policy_value(state_batch)
         for i in range(self.epochs):
             loss, entropy = self.policy_value_net.train_step(state_batch, mcts_probs_batch, winner_batch, self.learning_rate*self.lr_multiplier)
@@ -104,7 +104,8 @@ class TrainPipline():
         Only for monitoring the progress of training
         """
         current_mcts_player = MCTSPlayer(self.policy_value_net.policy_value_fn,c_puct = self.c_puct, n_playout = self.n_playout)
-    
+
+
     def run(self):
         """
         run the training pipline
