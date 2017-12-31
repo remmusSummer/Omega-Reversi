@@ -16,8 +16,6 @@ class Board(object):
 
     #terminal function
     def __init__(self, width = ROW, height = COL):
-        self.game = pygame.init()
-        self.mainClock = pygame.time.Clock()
         # set every position in the borad to 0
         self.map = np.zeros(shape=(ROW,COL), dtype=np.int32)
         self.state = {}
@@ -27,26 +25,10 @@ class Board(object):
         self.currentTurn = 1
         self.width = ROW
         self.height = COL
-
-         #load images
-        boardImage = pygame.image.load('env/images/board.png')
-        boardRect = boardImage.get_rect()
-        self.blackImage = pygame.image.load('env/images/black.png')
-        self.blackRect = self.blackImage.get_rect()
-        self.WhiteImage = pygame.image.load('env/images/white.png')
-        self.whiteRect = self.WhiteImage.get_rect()
-
-        self.basicFront = pygame.font.SysFont(None, 48)
-        self.gameOverStr = 'Score '
-
+        self.last_location = None
 
         #set display window
-        self.windoeSurface = pygame.display.set_mode((boardRect.width, boardRect.height))
         self.set_caption("Reversi")
-
-        self.windoeSurface.fill(BACKGROUNDCOLOR)
-        self.windoeSurface.blit(boardImage, boardRect, boardRect)
-
         self.reset_board()
 
     def set_caption(self, caption):
@@ -59,12 +41,8 @@ class Board(object):
         self.map[3][3] = 1
         self.map[3][4] = -1
         self.map[4][3] = -1
-        self.map[4][4] = 1
-        
-        self._move(3,3)
-        self._move(3,4)
-        self._move(4,4)
-        self._move(4,3)
+        self.map[4][4] = 1  
+        self.last_location = None
 
     def get_new_board(self):
         self.map = []
@@ -138,12 +116,12 @@ class Board(object):
 
     # get the avalible move for policy value net
     def get_avalible_move(self):
-        locations = self.get_valid_moves(self.currentTurn)
+        locations = self.get_valid_moves(self.currsentTurn)
         avalibleMove = []
         for location in locations:
             avalibleMove.append(self.location_to_move(location))
         
-        return location
+        return avalibleMove
 
     #get the score of black and white
     def get_score(self):
@@ -210,44 +188,52 @@ class Board(object):
     def set_readable_turns(self, readableTurns):
         self.readableTurns = readableTurns
 
-    def _move(self, col, row):
+    def _move(self, col, row, game):
 
         nextTurn = [*(self.players - set([self.currentTurn]))][0]
         if self.make_move(self.currentTurn, col, row) == True:
+            self.last_location = (col, row)
             if self.get_valid_moves(nextTurn) != []:
                 self.currentTurn = nextTurn
         
         for x in range(ROW):
             for y in range(COL):
-                rectDst = pygame.Rect(BOARDX+x*PIECEWIDTH, BOARDY+y*PIECEHEIGHT, PIECEWIDTH, PIECEHEIGHT)
                 if self.map[x][y] == 1:
-                    self.windoeSurface.blit(self.blackImage, rectDst, self.blackRect)
+                    game.draw_chess(x, y, 'black')
                 elif self.map[x][y] == -1:
-                    self.windoeSurface.blit(self.WhiteImage, rectDst, self.whiteRect)
+                    game.draw_chess(x, y, 'white')
+        
 
-    def move_chess(self, move):
+    def move_chess(self, move, game):
         x, y = self.move_to_location(move)
         self._move(x, y)
 
-    def print_result(self):
-        blackScore = self.get_score()['black']
-        whiteScore = self.get_score()['white']
-
-        gameOverStr = "Score "
-
-        outputStr = gameOverStr + str(blackScore)+ ":" + str(whiteScore) +", Winner:" + self.judge_winner()
-        text = self.basicFront.render(outputStr, True, (0, 0, 0), (0, 0, 255))
-        textRect = text.get_rect()
-        textRect.centerx = self.windoeSurface.get_rect().centerx
-        textRect.centery = self.windoeSurface.get_rect().centery
-        self.windoeSurface.blit(text, textRect)
-
-    def update_board(self):
+    def update_board(self, game):
         pygame.display.update()  
-        self.mainClock.tick(FPS)
+        game.mainClock.tick(FPS)
     
     def get_current_player(self):
         return self.currentTurn
+
+    def get_current_state(self):
+        """
+        return the current state of the board from the perspective of the current player
+        shape: 4*width*height
+        """
+        square_state = np.zeros((4, self.width, self.height))
+        for x in range(self.width):
+            for y in range(self.height):
+                if self.map[x][ y] == self.currentTurn:
+                    square_state[0][x, y] = 1.0
+                elif self.map[x][y] == [*(self.players - set([self.currentTurn]))][0]:
+                    square_state[1][x, y] = 1.0
+        if self.last_location:
+            square_state[2][self.last_location(0), self.last_location[1]]
+        if self.currentTurn == 1:  # if currentplayer is black, 
+            square_state[3][:,:] = 1.0
+        return square_state[:,::-1,:]
+
+
 
     def game_end(self):
         if self.is_game_over():
@@ -265,10 +251,54 @@ class Game(object):
         self.board = board
         self.game = pygame.init()
         self.mainClock = pygame.time.Clock()
-    
+
+        #set pygame display parameter
+        boardImage = pygame.image.load('env/images/board.png')
+        boardRect = boardImage.get_rect()
+        self.black_image = pygame.image.load('env/images/black.png')
+        self.black_rect = self.black_image.get_rect()
+        self.white_image = pygame.image.load('env/images/white.png')
+        self.white_rect = self.white_image.get_rect()
+
+        self.basicFront = pygame.font.SysFont(None, 48)
+        self.gameOverStr = 'Score '
+
+        self.windowSurface = pygame.display.set_mode((boardRect.width, boardRect.height))
+        
+        self.windowSurface.fill(BACKGROUNDCOLOR)
+        self.windowSurface.blit(boardImage, boardRect, boardRect)
+
+        self.draw_chess(3, 3, 'black')
+        self.draw_chess(4, 4, 'black')
+        self.draw_chess(3, 4, 'white')
+        self.draw_chess(4, 3, 'white')
+
+    def draw_chess(self, x, y, chess_color):
+        """
+        draw chess on the graphic board
+        """
+        rect_dst = pygame.Rect(BOARDX + x*PIECEWIDTH, BOARDY + y*PIECEHEIGHT, PIECEWIDTH, PIECEHEIGHT)
+        if chess_color == 'black':
+            self.windowSurface.blit(self.black_image, rect_dst, self.black_rect)
+        elif chess_color == 'white':
+            self.windowSurface.blit(self.white_image, rect_dst, self.white_rect)
+
     def terminate(self):
         pygame.quit()
         sys.exit()
+
+    def print_result(self):
+        blackScore = self.board.get_score()['black']
+        whiteScore = self.board.get_score()['white']
+
+        gameOverStr = "Score "
+
+        outputStr = gameOverStr + str(blackScore) + ":" + str(whiteScore) + ", Winner:" + self.board.judge_winner()
+        text = self.basicFront.render(outputStr, True, (0, 0, 0), (0, 0, 255))
+        textRect = text.get_rect()
+        textRect.centerx = self.windowSurface.get_rect().centerx
+        textRect.centery = self.windowSurface.get_rect().centery
+        self.windowSurface.blit(text, textRect)
     
     def start_play(self):
         
@@ -288,9 +318,31 @@ class Game(object):
                 if self.board.is_game_over():
                     self.board.print_result()
             
-            self.board.update_board()
+            self.board.update_board(self)
 
-    
+    def start_self_play(self, player, is_shown=0, temp = 1e-3):
+        p1, p2 = self.board.players
+        states, mcts_probs, current_player = [],[],[]
+        while(True):
+            move, move_probs = player.get_action(self.board,temp = temp, return_prob=1)
+            #store the data
+            states.append(self.board.current_state())
+            mcts_probs.append(move_probs)
+            current_player.append(self.board.get_current_player())
+            #perform a move
+            #TODO self.board.do_move()
+            end, winner = self.board.game_end()
+            if end:
+                winnwes_z = np.zeros(len(current_player))
+                if winner != -1:
+                    winnwes_z[np.array(current_player) == winner] = 1.0
+                    winnwes_z[np.array(current_player) != winner] = -1.0
+                    #reset MCTS root node
+                player.reset_player()
+                
+                return winner, zip(states, mcts_probs, winnwes_z)
+                
+
 if __name__ == '__main__':
     playBoard = Board()
     game = Game(playBoard)

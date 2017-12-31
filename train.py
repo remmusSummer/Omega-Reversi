@@ -10,6 +10,7 @@ from collections import defaultdict, deque
 from env.board import Board, Game
 from agent.policy_value_net import PolicyValueNet
 from agent.mcts import MCTSPlayer
+from agent.numpy_policy_value_net import PolicyValueNetNumpy
 
 WIDTH = 8
 HEIGHT = 8
@@ -40,7 +41,7 @@ class TrainPipline():
         self.pure_mcts_playout_num = 1000  
         
         self.policy_value_net = PolicyValueNet(self.board_width, self.board_height)
-        self.mcts_player = MCTSPlayer(self.policy_value_net.policy_value_fn,c_puct = self.c_puct, n_playout = self.n_playout, is_selfplay = 1)
+        self.mcts_player = MCTSPlayer(self.policy_value_net.policy_value_fn,self.board.get_current_player(),c_puct = self.c_puct, n_playout = self.n_playout, is_selfplay = 1)
 
     def get_extend_data(self, play_data):
         """
@@ -60,7 +61,7 @@ class TrainPipline():
                 extend_data.append((equi_state, np.flipud(equi_mcts_prob).flatten(), winner))
         return extend_data
 
-    def collect_selfplay_data(self):
+    def collect_selfplay_data(self, n_games = 1):
         """
         collect self-play data for training
         """

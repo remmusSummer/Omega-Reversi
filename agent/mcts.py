@@ -8,7 +8,7 @@ import numpy as np
 import copy
 import tensorflow as tf
 
-from env.board import board
+from env.board import Board
 
 class TreeNode(object):
     """
@@ -105,7 +105,7 @@ class MCTS(object):
             if node.is_leaf():
                 break
             action, node = node.select(self._c_puct)
-             state.move_chess(action)
+            state.move_chess(action)
         
         # Evaluate the leaf using a network which outputs a list of (action, probability)
         # tuples p and also a score v in [-1, 1] for the current player.
@@ -133,8 +133,9 @@ class MCTS(object):
         Returns:
         the available actions and the corresponding probabilities 
         """
+
         for n in range(self._n_playout):
-            state_copy = copy.deepcopy(state)
+            state_copy = copy.deepcopy(state)   
             self._playout(state_copy)
 
         #calculate the move probabilities based on the visit counts at the root node
@@ -163,7 +164,7 @@ class MCTSPlayer(object):
     def __init__(self, policy_value_function, chess,c_puct = 5, n_playout = 2000, is_selfplay = 0):
         self.mcts = MCTS(policy_value_function, c_puct, n_playout)
         self._is_selfplay = is_selfplay
-        self._chess  #indicate the chess color of the player
+        self._chess = chess  #indicate the chess color of the player
 
     def set_player_ind(self, p):
         self.player = p
@@ -172,7 +173,7 @@ class MCTSPlayer(object):
         self.mcts.update_with_move(-1)
 
     def get_action(self, board, temp = 1e-3, return_prob =0):
-        sensible_moves = board.getValidMoves
+        sensible_moves = board.get_avalible_move()
         move_probs = np.zeros(board.width*board.height)
         if len(sensible_moves) > 0:
             acts, probs = self.mcts.get_move_probs(board, temp)
@@ -188,7 +189,7 @@ class MCTSPlayer(object):
                 self.mcts.update_with_move(-1)
                 
             if return_prob:
-                return_prob move, move_probs
+                return move, move_probs
             else:
                 return move
         else:
