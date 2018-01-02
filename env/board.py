@@ -22,6 +22,9 @@ class Board(object):
         self.readableTurns = {'1':'black','-1':'white'}
         self.turnsdic = {'black': 1, 'white': -1}
         self.players = set([1, -1])
+
+
+    def init_board(self, game):
         self.currentTurn = 1
         self.width = ROW
         self.height = COL
@@ -30,7 +33,6 @@ class Board(object):
         #set display window
         self.set_caption("Reversi")
         self.reset_board()
-
     def set_caption(self, caption):
         pygame.display.set_caption(caption)
     def reset_board(self):
@@ -116,7 +118,7 @@ class Board(object):
 
     # get the avalible move for policy value net
     def get_avalible_move(self):
-        locations = self.get_valid_moves(self.currsentTurn)
+        locations = self.get_valid_moves(self.currentTurn)
         avalibleMove = []
         for location in locations:
             avalibleMove.append(self.location_to_move(location))
@@ -163,8 +165,6 @@ class Board(object):
             self.map[x][y] = chess
         return True
 
-    
-
     def is_on_corner(x, y):
         return (x == 0 and y == 0) or (x == 7 and y == 7) or (x == 0 and y ==7) or (x ==7 and y == 0)
 
@@ -188,7 +188,7 @@ class Board(object):
     def set_readable_turns(self, readableTurns):
         self.readableTurns = readableTurns
 
-    def _move(self, col, row, game):
+    def _move(self, col, row):
 
         nextTurn = [*(self.players - set([self.currentTurn]))][0]
         if self.make_move(self.currentTurn, col, row) == True:
@@ -204,7 +204,7 @@ class Board(object):
                     game.draw_chess(x, y, 'white')
         
 
-    def move_chess(self, move, game):
+    def move_chess(self, move):
         x, y = self.move_to_location(move)
         self._move(x, y)
 
@@ -346,5 +346,5 @@ class Game(object):
 if __name__ == '__main__':
     playBoard = Board()
     game = Game(playBoard)
-
+    playBoard.init_board(game)
     game.start_play()

@@ -9,6 +9,7 @@ import copy
 import tensorflow as tf
 
 from env.board import Board
+from env.board import Game
 
 class TreeNode(object):
     """
@@ -39,7 +40,7 @@ class TreeNode(object):
         Select actions among children that gives maximum action value, Q plus bonus u(P).
         Returns a tuple of (action, next_node)
         """
-        return max(self._children.iteritems(), key = lambda act_node:act_node[1].get_value(c_puct))
+        return max(self._children.items(), key = lambda act_node:act_node[1].get_value(c_puct))
         
 
     def update(self, leaf_value):
@@ -91,6 +92,7 @@ class MCTS(object):
         self._policy = policy_value_fn
         self._c_puct = c_puct
         self._n_playout = n_playout
+        self.game = Game(self)
 
     def _playout(self, state):
         """
@@ -105,13 +107,13 @@ class MCTS(object):
             if node.is_leaf():
                 break
             action, node = node.select(self._c_puct)
-            state.move_chess(action)
+            state.move_chess(action, game)
         
         # Evaluate the leaf using a network which outputs a list of (action, probability)
         # tuples p and also a score v in [-1, 1] for the current player.
         action_probs, leaf_value = self._policy(state)
         #check for end of game
-        end, winner = state.gameEnd()    
+        end, winner = state.game_end()    
 
         if not end:
             node.expand(action_probs)
