@@ -6,10 +6,8 @@ orginal code:https://github.com/junxiaosong/AlphaZero_Gomoku
 
 import numpy as np 
 import copy
-import tensorflow as tf
 
 from env.board import Board
-from env.board import Game
 
 class TreeNode(object):
     """
@@ -40,7 +38,7 @@ class TreeNode(object):
         Select actions among children that gives maximum action value, Q plus bonus u(P).
         Returns a tuple of (action, next_node)
         """
-        return max(self._children.items(), key = lambda act_node:act_node[1].get_value(c_puct))
+        return max(self._children.items(), key=lambda act_node: act_node[1].get_value(c_puct))
         
 
     def update(self, leaf_value):
@@ -92,7 +90,6 @@ class MCTS(object):
         self._policy = policy_value_fn
         self._c_puct = c_puct
         self._n_playout = n_playout
-        self.game = Game(self)
 
     def _playout(self, state):
         """
@@ -107,7 +104,10 @@ class MCTS(object):
             if node.is_leaf():
                 break
             action, node = node.select(self._c_puct)
-            state.move_chess(action, game)
+            state.move_chess(action)
+
+
+
         
         # Evaluate the leaf using a network which outputs a list of (action, probability)
         # tuples p and also a score v in [-1, 1] for the current player.
@@ -126,6 +126,11 @@ class MCTS(object):
         
         node.update_recursive(-leaf_value)
 
+    def softmax(self, x):
+        probs = np.exp(x - np.max(x))
+        probs /= np.sum(probs)
+        return probs
+
     def get_move_probs(self, state, temp = 1e-3):
         """
         Runs all playouts sequentially and returns the available actions and their corresponding probabilities 
@@ -141,9 +146,9 @@ class MCTS(object):
             self._playout(state_copy)
 
         #calculate the move probabilities based on the visit counts at the root node
-        act_visits = [(act, node._n_visits) for act, node in self._root._children.iteritems()]
+        act_visits = [(act, node._n_visits) for act, node in self._root._children.items()]
         acts, visits = zip(*act_visits)
-        act_probs = tf.nn.softmax(1.0/temp * tf.log(visits))
+        act_probs = self.softmax(1.0/temp * np.log(visits))
 
         return acts, act_probs
 

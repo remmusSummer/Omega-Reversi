@@ -17,7 +17,7 @@ class Board(object):
     #terminal function
     def __init__(self, width = ROW, height = COL):
         # set every position in the borad to 0
-        self.map = np.zeros(shape=(ROW,COL), dtype=np.int32)
+        self.map = [[0 for col in range(COL)] for row in range(ROW)]
         self.state = {}
         self.readableTurns = {'1':'black','-1':'white'}
         self.turnsdic = {'black': 1, 'white': -1}
@@ -119,6 +119,7 @@ class Board(object):
     # get the avalible move for policy value net
     def get_avalible_move(self):
         locations = self.get_valid_moves(self.currentTurn)
+    
         avalibleMove = []
         for location in locations:
             avalibleMove.append(self.location_to_move(location))
@@ -148,9 +149,8 @@ class Board(object):
         x = location[0]
         y = location[1]
 
-        x = int((x - BOARDX)/PIECEWIDTH)
-        y = int((y - BOARDY)/PIECEHEIGHT)
         move = x* self.width + y
+
         if(move not in range(self.width * self.height)):
             return -1 
         return move
@@ -194,15 +194,7 @@ class Board(object):
         if self.make_move(self.currentTurn, col, row) == True:
             self.last_location = (col, row)
             if self.get_valid_moves(nextTurn) != []:
-                self.currentTurn = nextTurn
-        
-        for x in range(ROW):
-            for y in range(COL):
-                if self.map[x][y] == 1:
-                    game.draw_chess(x, y, 'black')
-                elif self.map[x][y] == -1:
-                    game.draw_chess(x, y, 'white')
-        
+                self.currentTurn = nextTurn 
 
     def move_chess(self, move):
         x, y = self.move_to_location(move)
@@ -223,12 +215,12 @@ class Board(object):
         square_state = np.zeros((4, self.width, self.height))
         for x in range(self.width):
             for y in range(self.height):
-                if self.map[x][ y] == self.currentTurn:
+                if self.map[x][y] == self.currentTurn:
                     square_state[0][x, y] = 1.0
                 elif self.map[x][y] == [*(self.players - set([self.currentTurn]))][0]:
                     square_state[1][x, y] = 1.0
         if self.last_location:
-            square_state[2][self.last_location(0), self.last_location[1]]
+            square_state[2][self.last_location[0], self.last_location[1]]
         if self.currentTurn == 1:  # if currentplayer is black, 
             square_state[3][:,:] = 1.0
         return square_state[:,::-1,:]
@@ -268,20 +260,21 @@ class Game(object):
         self.windowSurface.fill(BACKGROUNDCOLOR)
         self.windowSurface.blit(boardImage, boardRect, boardRect)
 
-        self.draw_chess(3, 3, 'black')
-        self.draw_chess(4, 4, 'black')
-        self.draw_chess(3, 4, 'white')
-        self.draw_chess(4, 3, 'white')
 
-    def draw_chess(self, x, y, chess_color):
+    def draw_chess():
         """
         draw chess on the graphic board
         """
-        rect_dst = pygame.Rect(BOARDX + x*PIECEWIDTH, BOARDY + y*PIECEHEIGHT, PIECEWIDTH, PIECEHEIGHT)
-        if chess_color == 'black':
-            self.windowSurface.blit(self.black_image, rect_dst, self.black_rect)
-        elif chess_color == 'white':
-            self.windowSurface.blit(self.white_image, rect_dst, self.white_rect)
+
+        for x in range(self.board.width):
+            for y in range(self.board.height):
+                if self.board.map[x][y] == 1:
+                    rect_dst = pygame.Rect(BOARDX + x*PIECEWIDTH, BOARDY + y*PIECEHEIGHT, PIECEWIDTH, PIECEHEIGHT)
+                    self.windowSurface.blit(cls.black_image, rect_dst, cls.black_rect)
+                elif self.board.map[x][y] == -1:
+                    rect_dst = pygame.Rect(BOARDX + x*PIECEWIDTH, BOARDY + y*PIECEHEIGHT, PIECEWIDTH, PIECEHEIGHT)
+                    self.windowSurface.blit(cls.white_image, rect_dst, cls.white_rect)
+    
 
     def terminate(self):
         pygame.quit()
@@ -326,11 +319,11 @@ class Game(object):
         while(True):
             move, move_probs = player.get_action(self.board,temp = temp, return_prob=1)
             #store the data
-            states.append(self.board.current_state())
+            states.append(self.board.get_current_state())
             mcts_probs.append(move_probs)
             current_player.append(self.board.get_current_player())
             #perform a move
-            #TODO self.board.do_move()
+            self.board.move_chess(move)
             end, winner = self.board.game_end()
             if end:
                 winnwes_z = np.zeros(len(current_player))
