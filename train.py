@@ -163,21 +163,19 @@ class PolicyValueNet():
         mini_batch = random.sample(self.data_buffer, self.batch_size)
 
         state_batch = np.array([data[0] for data in mini_batch]).reshape(-1, 4, 8, 8)
-        mcts_probs_batch = [data[1] for data in mini_batch]
-        winner_batch = [data[2] for data in mini_batch]
+        mcts_probs_batch = np.array([data[1] for data in mini_batch])
+        winner_batch = np.array([data[2] for data in mini_batch])
         old_probs, old_v = self.policy_value(state_batch)
 
 
         self.winner = winner_batch
         self.mcts_probs = mcts_probs_batch
 
-        optimizer = keras.optimizers.Adam(lr=self.learning_rate * self.lr_multiplier)
-        self.model.compile(optimizer=optimizer, loss=self.loss)
-
         self._loss_train_op()
 
         for i in range(self.epochs):
-            loss = self.model.fit(state_batch, [mcts_probs_batch, winner_batch], epochs=self.epochs).loss
+            history = self.model.fit(state_batch, [mcts_probs_batch, winner_batch], epochs=self.epochs)
+            loss = history.history['loss']
             new_probs, new_v = self.policy_value(state_batch)
             kl = np.mean(np.sum(old_probs * (np.log(old_probs + 1e-10) - np.log(new_probs + 1e-10)),axis=1))
             if kl > self.kl_targ * 4:
@@ -226,7 +224,7 @@ class PolicyValueNet():
                 self.collect_selfplay_data(self.play_batch_size)
                 print("batch i:{}, episode_len:{}".format(i+1, self.episode_len))
                 if len(self.data_buffer) > self.batch_size:
-                    loss, entropy = self.policy_update()
+                    loss = self.policy_update()
                 #check the performance of the current model, and save the model parameters
                 if (i+1) % self.check_freq == 0:
                     print("current self-play batch: {}".format(i+1))
