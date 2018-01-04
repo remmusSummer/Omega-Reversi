@@ -72,8 +72,9 @@ class PolicyValueNet():
         l2_penalty = keras.regularizers.l2(self.l2_const)
 
         #keras policy network
-        policy_net = keras.layers.convolutional.Conv2D(filters = 4, kernel_size = [1, 1], activation='relu')(conv3)
-        self.policy_net = keras.layers.Dense(units = self.board_width * self.board_height, activation='softmax', activity_regularizer=l2_penalty)(policy_net)
+        policy_net1 = keras.layers.convolutional.Conv2D(filters = 4, kernel_size = [1, 1], activation='relu')(conv3)
+        policy_net2 = keras.layers.Flatten()(policy_net1)
+        self.policy_net = keras.layers.Dense(units = self.board_width * self.board_height, activation='softmax', activity_regularizer=l2_penalty)(policy_net2)
         
         # tensorflow action policy layers
         # policy_net = tf.layers.conv2d(conv3, filters = 4, kernel_size = [1, 1])
@@ -81,8 +82,9 @@ class PolicyValueNet():
 
         #keras state value layers
         value_layer1 = keras.layers.convolutional.Conv2D(filters = 2, kernel_size = [1, 1], activation='relu')(conv3)
-        value_layer2 = keras.layers.Dense(units = self.board_width*self.board_height, activation='relu')(value_layer1)
-        self.value_net = keras.layers.Dense(units = 1, activation='tanh', activity_regularizer=l2_penalty)(value_layer2)
+        value_layer2 = keras.layers.Flatten()(value_layer1)
+        value_layer3 = keras.layers.Dense(units = self.board_width*self.board_height, activation='relu')(value_layer2)
+        self.value_net = keras.layers.Dense(units = 1, activation='tanh', activity_regularizer=l2_penalty)(value_layer3)
 
         # #tensorflow state value layers
         # value_layer1 = tf.layers.conv2d(inputs = conv3, filters = 2, kernel_ssize = [1, 1])
