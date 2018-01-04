@@ -53,7 +53,7 @@ class PolicyValueNet():
 
 
     def  create_policy_value_net(self):
-        self.state_input = keras.Input(shape=(4, self.board_width, self.board_height,))
+        self.state_input = keras.Input(shape=(4, self.board_width, self.board_height))
         self.winner = keras.Input(shape = (1, ))
         self.mcts_probs = keras.Input(shape = (64, ))
 
@@ -99,13 +99,10 @@ class PolicyValueNet():
     def _loss_train_op(self):
         #There are three loss terms:
         #loss = (z - v)^2 + pi^T * log(p) + c||theta||^2
-        value_loss = keras.losses.mean_squared_error(self.winner, keras.layers.Flatten()(self.value_net))
+        value_loss = keras.losses.mean_squared_error(self.winner, self.value_net)
         policy_loss = keras.losses.categorical_crossentropy(self.policy_net, self.mcts_probs)
 
         self.loss = value_loss + policy_loss
-
-        optimizer = keras.optimizers.Adam(lr=self.learning_rate * self.lr_multiplier)
-        self.model.compile(optimizer=optimizer, loss=self.loss)
 
 
     def policy_value(self, state_input):
@@ -114,7 +111,8 @@ class PolicyValueNet():
         input: state
         output: action probability and value
         """
-        act_probs, value = self.model.predict(state_input)    
+
+        act_probs, value = self.model.predict(state_input)
         return act_probs, value
 
     def policy_value_fn(self, board):
@@ -137,7 +135,7 @@ class PolicyValueNet():
         for state, mcts_prob, winner in play_data:
             for i in [1, 2, 3, 4]:
                 # rotation
-                equi_state = np.array([np.rot90(s ,i) for s in equi_state])
+                equi_state = np.array([np.rot90(s ,i) for s in state])
                 equi_mcts_prob = np.rot90(np.flipud(mcts_prob.reshape(self.board_height,self.board_width)),i)
                 extend_data.append((equi_state, np.flipud(equi_mcts_prob).flatten(), winner))
                 #flip horizontally
@@ -160,13 +158,19 @@ class PolicyValueNet():
     #TODO: two model aggregation
     def policy_update(self):
         mini_batch = random.sample(self.data_buffer, self.batch_size)
-        state_batch = [data[0] for data in mini_batch]
+
+        state_batch = np.array([data[0] for data in mini_batch]).reshape(-1, 4, 8, 8)
         mcts_probs_batch = [data[1] for data in mini_batch]
         winner_batch = [data[2] for data in mini_batch]
         old_probs, old_v = self.policy_value(state_batch)
 
+
         self.winner = winner_batch
         self.mcts_probs = mcts_probs_batch
+
+        optimizer = keras.optimizers.Adam(lr=self.learning_rate * self.lr_multiplier)
+        self.model.compile(optimizer=optimizer, loss=self.loss)
+
         self._loss_train_op()
 
         for i in range(self.epochs):

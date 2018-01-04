@@ -46,6 +46,12 @@ class Board(object):
         self.map[4][4] = 1  
         self.last_location = None
 
+        self.currentTurn = 1
+        self.width = ROW
+        self.height = COL
+        self.last_location = None
+        self.state = {}
+
     def get_new_board(self):
         self.map = []
         for i in range (ROW):
@@ -230,7 +236,10 @@ class Board(object):
     def game_end(self):
         if self.is_game_over():
             winner = self.judge_winner()
-            return True, winner
+            if winner == 'black':
+                return True, 1
+            elif winner == 'white':
+                return True, -1
         else:
             return False, None
 
@@ -270,10 +279,10 @@ class Game(object):
             for y in range(self.board.height):
                 if self.board.map[x][y] == 1:
                     rect_dst = pygame.Rect(BOARDX + x*PIECEWIDTH, BOARDY + y*PIECEHEIGHT, PIECEWIDTH, PIECEHEIGHT)
-                    self.windowSurface.blit(cls.black_image, rect_dst, cls.black_rect)
+                    self.windowSurface.blit(self.black_image, rect_dst, self.black_rect)
                 elif self.board.map[x][y] == -1:
                     rect_dst = pygame.Rect(BOARDX + x*PIECEWIDTH, BOARDY + y*PIECEHEIGHT, PIECEWIDTH, PIECEHEIGHT)
-                    self.windowSurface.blit(cls.white_image, rect_dst, cls.white_rect)
+                    self.windowSurface.blit(self.white_image, rect_dst, self.white_rect)
     
 
     def terminate(self):
@@ -314,6 +323,8 @@ class Game(object):
             self.board.update_board(self)
 
     def start_self_play(self, player, is_shown=0, temp = 1e-3):
+
+        self.board.reset_board()
         p1, p2 = self.board.players
         states, mcts_probs, current_player = [],[],[]
         while(True):
@@ -333,7 +344,7 @@ class Game(object):
                     #reset MCTS root node
                 player.reset_player()
                 
-                return winner, zip(states, mcts_probs, winnwes_z)
+                return winner, list(zip(states, mcts_probs, winnwes_z))
                 
 
 if __name__ == '__main__':
