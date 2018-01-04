@@ -91,7 +91,7 @@ class PolicyValueNet():
         # value_layer2 = tf.layers.dense(value_layer1, units = self.board_width*self.board_height)
         # self.value_net = tf.layers.dense(value_layer2, units = 1, activation=tf.nn.tanh)
 
-        self.model = keras.Model(input = self.state_input, outputs = [self.policy_net, self.value_net])
+        self.model = keras.engine.training.Model(input = self.state_input, outputs = [self.policy_net, self.value_net])
 
         #get action probs and sate score value
         #self.action_probs, self.value = tensorflow sess run
@@ -99,13 +99,13 @@ class PolicyValueNet():
     def _loss_train_op(self):
         #There are three loss terms:
         #loss = (z - v)^2 + pi^T * log(p) + c||theta||^2
-        value_loss = keras.losses.mean_squared_error(self.winner, keras.layers.Flatten()(self.value_net))
-        policy_loss = keras.losses.categorical_crossentropy(self.policy_net, self.mcts_probs)
+        #value_loss = keras.losses.mean_squared_error(self.winner, keras.layers.Flatten()(self.value_net))
+        #policy_loss = keras.losses.categorical_crossentropy(self.policy_net, self.mcts_probs)
 
-        self.loss = value_loss + policy_loss
+        #self.loss = value_loss + policy_loss
 
         optimizer = keras.optimizers.Adam(lr=self.learning_rate * self.lr_multiplier)
-        self.model.compile(optimizer=optimizer, loss=self.loss)
+        self.model.compile(optimizer=optimizer, loss=loss_function)
 
 
     def policy_value(self, state_input):
@@ -137,7 +137,7 @@ class PolicyValueNet():
         for state, mcts_prob, winner in play_data:
             for i in [1, 2, 3, 4]:
                 # rotation
-                equi_state = np.array([np.rot90(s ,i) for s in equi_state])
+                equi_state = np.array([np.rot90(s ,i) for s in state])
                 equi_mcts_prob = np.rot90(np.flipud(mcts_prob.reshape(self.board_height,self.board_width)),i)
                 extend_data.append((equi_state, np.flipud(equi_mcts_prob).flatten(), winner))
                 #flip horizontally
@@ -236,6 +236,9 @@ class PolicyValueNet():
         except KeyboardInterrupt:
             print('\n\rquit')
 
+def loss_function(y_true, y_pred):
+    return keras.losses.categorical_crossentropy(y_true, y_pred) + keras.losses.mean_squared_error(y_true, y_pred)
+            
 if __name__ == '__main__':
     training_pipeline = PolicyValueNet(8, 8)
     training_pipeline.run()
