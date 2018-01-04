@@ -53,15 +53,14 @@ class PolicyValueNet():
 
 
     def  create_policy_value_net(self):
-        self.state_input = keras.Input(shape=(4, self.board_width, self.board_height, ))
+        self.state_input = keras.Input(shape=(4, self.board_width, self.board_height,))
         self.winner = keras.Input(shape = (1, ))
         self.mcts_probs = keras.Input(shape = (64, ))
 
         # keras conv layers
-        conv1 = keras.layers.convolutional.Conv2D(filters = 32, kernel_size = (3, 3), padding='same')(self.state_input)
-        conv2 = keras.layers.convolutional.Conv2D(filters = 64, kernel_size = (3, 3), padding='same')(conv1)
-        conv3 = keras.layers.convolutional.Conv2D(filters = 128, kernel_size = (3, 3), padding='same')(conv2)
-
+        conv1 = keras.layers.convolutional.Conv2D(filters = 32, kernel_size = (3, 3), padding='same', activation='relu')(self.state_input)
+        conv2 = keras.layers.convolutional.Conv2D(filters = 64, kernel_size = (3, 3), padding='same', activation='relu')(conv1)
+        conv3 = keras.layers.convolutional.Conv2D(filters = 128, kernel_size = (3, 3), padding='same', activation='relu')(conv2)
 
 
         # tensorflow conv layers
@@ -73,7 +72,7 @@ class PolicyValueNet():
         l2_penalty = keras.regularizers.l2(self.l2_const)
 
         #keras policy network
-        policy_net = keras.layers.convolutional.Conv2D(filters = 4, kernel_size = [1, 1])(conv3)
+        policy_net = keras.layers.convolutional.Conv2D(filters = 4, kernel_size = [1, 1], activation='relu')(conv3)
         self.policy_net = keras.layers.Dense(units = self.board_width * self.board_height, activation='softmax', activity_regularizer=l2_penalty)(policy_net)
         
         # tensorflow action policy layers
@@ -81,8 +80,8 @@ class PolicyValueNet():
         # self.policy_net = tf.layers.dense(policy_net, units = self.board_width * self.board_height, activation=tf.nn.softmax)
 
         #keras state value layers
-        value_layer1 = keras.layers.convolutional.Conv2D(filters = 2, kernel_size = [1, 1])(conv3)
-        value_layer2 = keras.layers.Dense(units = self.board_width*self.board_height)(value_layer1)
+        value_layer1 = keras.layers.convolutional.Conv2D(filters = 2, kernel_size = [1, 1], activation='relu')(conv3)
+        value_layer2 = keras.layers.Dense(units = self.board_width*self.board_height, activation='relu')(value_layer1)
         self.value_net = keras.layers.Dense(units = 1, activation='tanh', activity_regularizer=l2_penalty)(value_layer2)
 
         # #tensorflow state value layers
@@ -102,6 +101,9 @@ class PolicyValueNet():
         policy_loss = keras.losses.categorical_crossentropy(self.policy_net, self.mcts_probs)
 
         self.loss = value_loss + policy_loss
+
+        optimizer = keras.optimizers.Adam(lr=self.learning_rate * self.lr_multiplier)
+        self.model.compile(optimizer=optimizer, loss=self.loss)
 
 
     def policy_value(self, state_input):
@@ -161,11 +163,10 @@ class PolicyValueNet():
         winner_batch = [data[2] for data in mini_batch]
         old_probs, old_v = self.policy_value(state_batch)
 
-        optimizer = keras.optimizers.Adam(lr = self.learning_rate*self.lr_multiplier)        
         self.winner = winner_batch
         self.mcts_probs = mcts_probs_batch
         self._loss_train_op()
-        self.model.compile(optimizer = optimizer, loss = self.loss)
+
         for i in range(self.epochs):
             loss = self.model.fit(state_batch, [mcts_probs_batch, winner_batch], epochs=self.epochs).loss
             new_probs, new_v = self.policy_value(state_batch)
