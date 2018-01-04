@@ -103,9 +103,10 @@ class PolicyValueNet():
         #policy_loss = keras.losses.categorical_crossentropy(self.policy_net, self.mcts_probs)
 
         #self.loss = value_loss + policy_loss
-
+        
+        losses = [loss_function_for_policy, loss_function_for_value]
         optimizer = keras.optimizers.Adam(lr=self.learning_rate * self.lr_multiplier)
-        self.model.compile(optimizer=optimizer, loss=loss_function)
+        self.model.compile(optimizer=optimizer, loss=losses)
 
 
     def policy_value(self, state_input):
@@ -236,8 +237,11 @@ class PolicyValueNet():
         except KeyboardInterrupt:
             print('\n\rquit')
 
-def loss_function(y_true, y_pred):
-    return keras.losses.categorical_crossentropy(y_true, y_pred) + keras.losses.mean_squared_error(y_true, y_pred)
+def loss_function_for_policy(y_true, y_pred):
+    return keras.losses.categorical_crossentropy(y_true, y_pred)
+
+def loss_function_for_value(y_true, y_pred):
+    return keras.losses.mean_squared_error(y_true, y_pred)
             
 if __name__ == '__main__':
     training_pipeline = PolicyValueNet(8, 8)
