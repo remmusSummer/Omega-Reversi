@@ -50,7 +50,7 @@ class PolicyValueNet():
         self._loss_train_op()
         
         #init mcts player
-        self.mcts_player = MCTSPlayer(self.policy_value_fn, self.board.get_current_player(), c_puct = self.c_puct, n_playout = self.n_playout, is_selfplay = 1)
+        self.mcts_player = MCTSPlayer(self.policy_value_fn, c_puct = self.c_puct, n_playout = self.n_playout, is_selfplay = 1)
 
 
     def  create_policy_value_net(self):
@@ -174,7 +174,7 @@ class PolicyValueNet():
         return loss
 
 
-    def policy_evaluate(self, n_games = 0):
+    def policy_evaluate(self, n_games = 10):
         """
         Evaluate the trained policy by playing games against thr pure MCTS player
         Only for monitoring the progress of training

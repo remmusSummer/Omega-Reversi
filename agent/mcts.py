@@ -168,10 +168,9 @@ class MCTS(object):
 
 class MCTSPlayer(object):
     """ AI player based on MCTS"""
-    def __init__(self, policy_value_function, chess,c_puct = 5, n_playout = 2000, is_selfplay = 0):
+    def __init__(self, policy_value_function,c_puct = 5, n_playout = 2000, is_selfplay = 0):
         self.mcts = MCTS(policy_value_function, c_puct, n_playout)
         self._is_selfplay = is_selfplay
-        self._chess = chess  #indicate the chess color of the player
 
     def set_player_ind(self, p):
         self.player = p
