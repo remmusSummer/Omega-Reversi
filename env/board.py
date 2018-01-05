@@ -176,11 +176,21 @@ class Board(object):
 
     #check if the board have empty space
     def is_game_over(self):
+        #check that if the board is full
+        isFull = True
         for x in range(ROW):
             for y in range(COL):
                 if self.map[x][y] == 0:
-                    return False
-        return True
+                    isFull = False
+        #check that if there is avalible position for both side
+        haveNoPosition = False
+        if(len(self.get_valid_moves(-1)) == 0 or len(self.get_valid_moves(1)) == 0):
+            haveNoPosition = True
+
+        if isFull or haveNoPosition:
+            return True
+        else:
+            return False
 
     def judge_winner(self):
         score = self.get_score()
@@ -188,8 +198,10 @@ class Board(object):
         whiteScore = score['white']
         if blackScore > whiteScore:
             return 'black'
-        else: 
+        elif whiteScore > blackScore:
             return 'white'
+        else:
+            return 'tie'
 
     def set_readable_turns(self, readableTurns):
         self.readableTurns = readableTurns
@@ -205,10 +217,6 @@ class Board(object):
     def move_chess(self, move):
         x, y = self.move_to_location(move)
         self._move(x, y)
-
-    def update_board(self, game):
-        pygame.display.update()  
-        game.mainClock.tick(FPS)
     
     def get_current_player(self):
         return self.currentTurn
@@ -240,6 +248,8 @@ class Board(object):
                 return True, 1
             elif winner == 'white':
                 return True, -1
+            else:
+                return True, 0  #game tie
         else:
             return False, None
 
@@ -250,10 +260,12 @@ class Game(object):
     """
     def __init__(self, board):
         self.board = board
+
+    def reset_graph(self):
         self.game = pygame.init()
         self.mainClock = pygame.time.Clock()
 
-        #set pygame display parameter
+        # set pygame display parameter
         boardImage = pygame.image.load('env/images/board.png')
         boardRect = boardImage.get_rect()
         self.black_image = pygame.image.load('env/images/black.png')
@@ -265,12 +277,15 @@ class Game(object):
         self.gameOverStr = 'Score '
 
         self.windowSurface = pygame.display.set_mode((boardRect.width, boardRect.height))
-        
+
         self.windowSurface.fill(BACKGROUNDCOLOR)
         self.windowSurface.blit(boardImage, boardRect, boardRect)
 
+    def update_board(self):
+        pygame.display.update()
+        self.mainClock.tick(FPS)
 
-    def draw_chess():
+    def draw_chess(self):
         """
         draw chess on the graphic board
         """
@@ -302,25 +317,57 @@ class Game(object):
         textRect.centery = self.windowSurface.get_rect().centery
         self.windowSurface.blit(text, textRect)
     
-    def start_play(self):
+    def start_play(self, player1, player2, isShow = False):
         
+        self.board.reset_board()
+        if isShow:
+            self.reset_graph()
+            self.draw_chess()
+            self.update_board()
+
         while True:
-            for event in pygame.event.get():
-                if event.type == QUIT:
-                    self.board.terminate()
+            end, winner = self.board.game_end()
+            if not end:
+                player1_move = player1.get_action(self.board)
+                player2_move = player2.get_action(self.board)
 
-                caption = "Reversi -- current turn: " + self.board.readableTurns[str(playBoard.currentTurn)]
-                self.board.set_caption(caption)
+                if isShow:
+                    self.board.move_chess(player1_move)
+                    self.draw_chess()
+                    self.update_board()
 
-                if event.type == MOUSEBUTTONDOWN and event.button == 1:
-                    location = pygame.mouse.get_pos()
-                    #when using AI, we only got action in a one dimention array
-                    self.board.move_chess(self.board.location_to_move(location))
+                    self.board.move_chess(player2_move)
+                    self.draw_chesss()
+                    self.update_board()
 
-                if self.board.is_game_over():
-                    self.board.print_result()
-            
-            self.board.update_board(self)
+            else:
+                if winner != 0:
+                    print("Game end. Winner is ", self.board.readableTurns[str(winner)])
+                else:
+                    print("Game end. Tie")
+
+                if isShow:
+                    pygame.quit()
+
+                return winner
+
+
+        #     for event in pygame.event.get():
+        #         if event.type == QUIT:
+        #             self.board.terminate()
+        #
+        #         caption = "Reversi -- current turn: " + self.board.readableTurns[str(playBoard.currentTurn)]
+        #         self.board.set_caption(caption)
+        #
+        #         if event.type == MOUSEBUTTONDOWN and event.button == 1:
+        #             location = pygame.mouse.get_pos()
+        #             #when using AI, we only got action in a one dimention array
+        #             self.board.move_chess(self.board.location_to_move(location))
+        #
+        #         if self.board.is_game_over():
+        #             self.board.print_result()
+        #
+        #     self.board.update_board(self)
 
     def start_self_play(self, player, is_shown=0, temp = 1e-3):
 
@@ -338,7 +385,7 @@ class Game(object):
             end, winner = self.board.game_end()
             if end:
                 winnwes_z = np.zeros(len(current_player))
-                if winner != -1:
+                if winner != 0:
                     winnwes_z[np.array(current_player) == winner] = 1.0
                     winnwes_z[np.array(current_player) != winner] = -1.0
                     #reset MCTS root node

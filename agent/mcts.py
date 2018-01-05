@@ -119,7 +119,7 @@ class MCTS(object):
             node.expand(action_probs)
         else:
             #for end state, return the "true" leaf_value
-            if winner == -1: #tie
+            if winner == 0: #tie
                 leaf_value = 0.0
             else:
                 leaf_value = 1.0 if winner == state.get_current_player() else -1.0

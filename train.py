@@ -12,6 +12,7 @@ import pickle as pickle
 from collections import defaultdict, deque
 from env.board import Board, Game
 from agent.mcts import MCTSPlayer
+from agent.pure_mcts import  MCTSPlayer as Pure_MCTS
 
 class PolicyValueNet():
     """
@@ -62,12 +63,6 @@ class PolicyValueNet():
         conv2 = keras.layers.convolutional.Conv2D(filters = 64, kernel_size = (3, 3), padding='same', activation='relu')(conv1)
         conv3 = keras.layers.convolutional.Conv2D(filters = 128, kernel_size = (3, 3), padding='same', activation='relu')(conv2)
 
-
-        # tensorflow conv layers
-        # conv1 = tf.layers.conv2d(inputs = state_input, filters = 32, kernel_size = [3, 3], padding='same')
-        # conv2 = tf.layers.conv2d(inputs = conv1, filters = 64, kernel_size = [3, 3], padding='same')
-        # conv3 = tf.layers.conv2d(inputs = conv2, filters = 128, kernel_size = [3, 3], padding='same')
-        
         #regularization teams
         l2_penalty = keras.regularizers.l2(self.l2_const)
 
@@ -75,10 +70,6 @@ class PolicyValueNet():
         policy_net1 = keras.layers.convolutional.Conv2D(filters = 4, kernel_size = [1, 1], activation='relu')(conv3)
         policy_net2 = keras.layers.Flatten()(policy_net1)
         self.policy_net = keras.layers.Dense(units = self.board_width * self.board_height, activation='softmax', activity_regularizer=l2_penalty)(policy_net2)
-        
-        # tensorflow action policy layers
-        # policy_net = tf.layers.conv2d(conv3, filters = 4, kernel_size = [1, 1])
-        # self.policy_net = tf.layers.dense(policy_net, units = self.board_width * self.board_height, activation=tf.nn.softmax)
 
         #keras state value layers
         value_layer1 = keras.layers.convolutional.Conv2D(filters = 2, kernel_size = [1, 1], activation='relu')(conv3)
@@ -86,23 +77,12 @@ class PolicyValueNet():
         value_layer3 = keras.layers.Dense(units = self.board_width*self.board_height, activation='relu')(value_layer2)
         self.value_net = keras.layers.Dense(units = 1, activation='tanh', activity_regularizer=l2_penalty)(value_layer3)
 
-        # #tensorflow state value layers
-        # value_layer1 = tf.layers.conv2d(inputs = conv3, filters = 2, kernel_ssize = [1, 1])
-        # value_layer2 = tf.layers.dense(value_layer1, units = self.board_width*self.board_height)
-        # self.value_net = tf.layers.dense(value_layer2, units = 1, activation=tf.nn.tanh)
-
         self.model = keras.engine.training.Model(input = self.state_input, outputs = [self.policy_net, self.value_net])
 
-        #get action probs and sate score value
-        #self.action_probs, self.value = tensorflow sess run
 
     def _loss_train_op(self):
         #There are three loss terms:
         #loss = (z - v)^2 + pi^T * log(p) + c||theta||^2
-        #value_loss = keras.losses.mean_squared_error(self.winner, keras.layers.Flatten()(self.value_net))
-        #policy_loss = keras.losses.categorical_crossentropy(self.policy_net, self.mcts_probs)
-
-        #self.loss = value_loss + policy_loss
         
         losses = [loss_function_for_policy, loss_function_for_value]
         optimizer = keras.optimizers.Adam(lr=self.learning_rate * self.lr_multiplier)
@@ -200,6 +180,14 @@ class PolicyValueNet():
         Only for monitoring the progress of training
         """
         current_mcts_player = MCTSPlayer(self.policy_value_fn,c_puct = self.c_puct, n_playout = self.n_playout)
+        pure_mcts_player = Pure_MCTS(c_puct=5, n_playout=self.pure_mcts_playout_num)
+        win_count = defaultdict(int)
+        for i in range(n_games):
+            winner = self.game.start_play(current_mcts_player, pure_mcts_player)
+            win_count[winner] += 1
+        win_ratio = 1.0 * (win_count[1] + 0.5*win_count[0])/n_games
+        print("num_playout: {}, win: {}, loss:{}, tie: {}".format(self.pure_mcts_playout_num, win_count[1], win_count [-1], win_count[0]))
+        return win_ratio
     
     def get_policy_param(self):
         """

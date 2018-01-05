@@ -55,7 +55,7 @@ class TreeNode(object):
         Returns：
         A tuple of (action, next_node)
         """
-        return max(self._children.items(), key = lambda act_node[1].get_value(c_puct))
+        return max(self._children.items(), key=lambda act_node: act_node[1].get_value(c_puct))
 
     def update(self, leaf_value):
         """
@@ -152,7 +152,7 @@ class MCTS(object):
             state.move_chess(max_action)
         else:
             print("WARNING: rollout reached move limit")
-        if winner == -1:
+        if winner == 0:
             return 0
         else:
             return 1 if winner == player else -1
