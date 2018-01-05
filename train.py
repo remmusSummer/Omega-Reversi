@@ -199,7 +199,7 @@ class PolicyValueNet():
         Evaluate the trained policy by playing games against thr pure MCTS player
         Only for monitoring the progress of training
         """
-        current_mcts_player = MCTSPlayer(self.policy_value_net.policy_value_fn,c_puct = self.c_puct, n_playout = self.n_playout)    
+        current_mcts_player = MCTSPlayer(self.policy_value_fn,c_puct = self.c_puct, n_playout = self.n_playout)
     
     def get_policy_param(self):
         """
@@ -229,12 +229,14 @@ class PolicyValueNet():
                 if (i+1) % self.check_freq == 0:
                     print("current self-play batch: {}".format(i+1))
                     win_ratio = self.policy_evaluate()
-                    net_params = self.get_policy_param() #get model parameters
-                    pickle.dump(net_params, open('../model/current_policy.model','wb'),pickle.HIGHEST_PROTOCOL) # save model parameters to file
+                    # net_params = self.get_policy_param() #get model parameters
+                    # pickle.dump(net_params, open('./model/current_policy.model','wb'),pickle.HIGHEST_PROTOCOL) # save model parameters to file
+                    self.model.save("./model/current_model.h5")
                     if win_ratio > self.best_win_ratio:
                         print("New best policy get!")
                         self.best_win_ratio = win_ratio
-                        pickle.dump(net_params, open('../model/best_policy.model','wb'), pickle.HIGHEST_PROTOCOL) # update the best policy
+                        # pickle.dump(net_params, open('./model/best_policy.model','wb'), pickle.HIGHEST_PROTOCOL) # update the best policy
+                        self.model.save("./model/best_policy_model.h5")
                         if self.best_win_ratio == 1.0 and self.pure_mcts_playout_num < 5000:
                             self.pure_mcts_playout_num += 1000
                             self.best_win_ratio = 0.0

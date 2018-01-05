@@ -50,12 +50,12 @@ class TreeNode(object):
                 self._children[action] = TreeNode(self,prob)
     
     def select(self, c_puct):        
-    """
-    Select action among children that gives maximum action value, Q plus bonus u(P).
-    Returns：
-    A tuple of (action, next_node)
-    """
-        return max(self._children.iteritems(), key = lambda act_node[1].get_value(c_puct))
+        """
+        Select action among children that gives maximum action value, Q plus bonus u(P).
+        Returns：
+        A tuple of (action, next_node)
+        """
+        return max(self._children.items(), key = lambda act_node[1].get_value(c_puct))
 
     def update(self, leaf_value):
         """
@@ -149,7 +149,7 @@ class MCTS(object):
                 break
             action_probs = rollout_policy_fn(state)
             max_action = max(action_probs, key = itemgetter(1))[0]
-            #Todo state.do_move(max_action)
+            state.move_chess(max_action)
         else:
             print("WARNING: rollout reached move limit")
         if winner == -1:
@@ -165,7 +165,7 @@ class MCTS(object):
         for n in range(self._n_playout):
             state_copy = copy.deepcopy(state)
             self._playout(state_copy)
-        return max(self._root._children.iteritems(), key=lambda act_node:act_node[1]._n_visit)
+        return max(self._root._children.items(), key=lambda act_node:act_node[1]._n_visit)
     
     def update_with_move(self, last_move):
         """
