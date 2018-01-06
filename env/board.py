@@ -331,12 +331,12 @@ class Game(object):
                 player1_move = player1.get_action(self.board)
                 player2_move = player2.get_action(self.board)
 
+                self.board.move_chess(player1_move)
+                self.board.move_chess(player2_move)
                 if isShow:
-                    self.board.move_chess(player1_move)
                     self.draw_chess()
                     self.update_board()
 
-                    self.board.move_chess(player2_move)
                     self.draw_chesss()
                     self.update_board()
 

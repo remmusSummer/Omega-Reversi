@@ -190,10 +190,13 @@ class MCTSPlayer(object):
     def set_player_ind(self, p):
         self.player = p
 
-    def reset_player(self, board):
-        avalible = board.get_avalible_move()
-        sensible_move = avalible
-        if len(sensible_move) > 0:
+
+    def reset_player(self):
+        self.mcts.update_with_move(-1)
+
+    def get_action(self, board):
+        sensible_moves = board.get_avalible_move()
+        if len(sensible_moves) > 0:
             move = self.mcts.get_move(board)
             self.mcts.update_with_move(-1)
             return move
