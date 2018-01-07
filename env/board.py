@@ -3,7 +3,7 @@ from pygame.locals import *
 import numpy as np
 
 BACKGROUNDCOLOR = (255, 255, 255)
-FPS = 40
+FPS = 10
 ROW = 8
 COL = 8
 PIECEWIDTH = 75
@@ -24,7 +24,7 @@ class Board(object):
         self.players = set([1, -1])
 
 
-    def init_board(self, game):
+    def init_board(self):
         self.currentTurn = 1
         self.width = ROW
         self.height = COL
@@ -217,6 +217,7 @@ class Board(object):
     def move_chess(self, move):
         x, y = self.move_to_location(move)
         self._move(x, y)
+        return True
     
     def get_current_player(self):
         return self.currentTurn
@@ -266,8 +267,8 @@ class Game(object):
         self.mainClock = pygame.time.Clock()
 
         # set pygame display parameter
-        boardImage = pygame.image.load('env/images/board.png')
-        boardRect = boardImage.get_rect()
+        self.boardImage = pygame.image.load('env/images/board.png')
+        self.boardRect = self.boardImage.get_rect()
         self.black_image = pygame.image.load('env/images/black.png')
         self.black_rect = self.black_image.get_rect()
         self.white_image = pygame.image.load('env/images/white.png')
@@ -276,10 +277,11 @@ class Game(object):
         self.basicFront = pygame.font.SysFont(None, 48)
         self.gameOverStr = 'Score '
 
-        self.windowSurface = pygame.display.set_mode((boardRect.width, boardRect.height))
+        self.windowSurface = pygame.display.set_mode((self.boardRect.width, self.boardRect.height))
 
+    def show_backgraph(self):
         self.windowSurface.fill(BACKGROUNDCOLOR)
-        self.windowSurface.blit(boardImage, boardRect, boardRect)
+        self.windowSurface.blit(self.boardImage, self.boardRect, self.boardRect)
 
     def update_board(self):
         pygame.display.update()
@@ -372,7 +374,6 @@ class Game(object):
     def start_self_play(self, player, is_shown=0, temp = 1e-3):
 
         self.board.reset_board()
-        p1, p2 = self.board.players
         states, mcts_probs, current_player = [],[],[]
         while(True):
             move, move_probs = player.get_action(self.board,temp = temp, return_prob=1)

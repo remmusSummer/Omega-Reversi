@@ -19,7 +19,7 @@ class PolicyValueNet():
     policy value net
     """
 
-    def __init__(self, board_width, board_height, net_params = None):
+    def __init__(self, board_width, board_height, net_params_path = None):
 
         # init network parameters
         self.learning_rate = 5e-3
@@ -42,12 +42,15 @@ class PolicyValueNet():
         # initial env
         self.board = Board()
         self.game = Game(self.board)
-        self.board.init_board(self.game)
+        self.board.init_board()
         self.board_width = board_width
         self.board_height = board_height
 
         self.create_policy_value_net()
         self._loss_train_op()
+
+        if net_params_path:
+            self.model.load_weights(net_params_path)
         
         #init mcts player
         self.mcts_player = MCTSPlayer(self.policy_value_fn, c_puct = self.c_puct, n_playout = self.n_playout, is_selfplay = 1)
@@ -238,5 +241,5 @@ def loss_function_for_value(y_true, y_pred):
     return keras.losses.mean_squared_error(y_true, y_pred)
             
 if __name__ == '__main__':
-    training_pipeline = PolicyValueNet(8, 8)
+    training_pipeline = PolicyValueNet(8, 8, './model/current_model.h5')
     training_pipeline.run()
