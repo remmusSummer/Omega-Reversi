@@ -146,11 +146,19 @@ class MCTS(object):
             self._playout(state_copy)
 
         #calculate the move probabilities based on the visit counts at the root node
-        act_visits = [(act, node._n_visits) for act, node in self._root._children.items()]
-        acts, visits = zip(*act_visits)
-        act_probs = self.softmax(1.0/temp * np.log(visits))
+
+        if len(self._root._children) != 0:
+            act_visits = [(act, node._n_visits) for act, node in self._root._children.items()]
+
+            acts, visits = zip(*act_visits)
+            act_probs = self.softmax(1.0 / temp * np.log(visits))
+
+        else:
+            acts = self._root
 
         return acts, act_probs
+
+
 
     def update_with_move(self, last_move):
         """
@@ -183,6 +191,7 @@ class MCTSPlayer(object):
         move_probs = np.zeros(board.width*board.height)
         if len(sensible_moves) > 0:
             acts, probs = self.mcts.get_move_probs(board, temp)
+
             move_probs[list(acts)] = probs
             if self._is_selfplay:
                 # add Dirichlet Noise for exploration(needed for self-play training)

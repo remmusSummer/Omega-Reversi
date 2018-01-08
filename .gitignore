@@ -3,3 +3,7 @@
 Omega-Reversi.pyproj
 .vs/
 .idea/
+.__pycache__/
+.env/__pycache__
+.env/.vscode
+.agent/__pycache__

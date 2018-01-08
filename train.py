@@ -19,7 +19,8 @@ class PolicyValueNet():
     policy value net
     """
 
-    def __init__(self, board_width, board_height, net_params_path = None):
+    #if want to play with AI, set "is_self_play = 0"
+    def __init__(self, board_width, board_height, net_params_path = None, is_self_play = 1):
 
         # init network parameters
         self.learning_rate = 5e-3
@@ -53,7 +54,7 @@ class PolicyValueNet():
             self.model.load_weights(net_params_path)
         
         #init mcts player
-        self.mcts_player = MCTSPlayer(self.policy_value_fn, c_puct = self.c_puct, n_playout = self.n_playout, is_selfplay = 1)
+        self.mcts_player = MCTSPlayer(self.policy_value_fn, c_puct = self.c_puct, n_playout = self.n_playout, is_selfplay = is_self_play)
 
 
     def  create_policy_value_net(self):

@@ -184,7 +184,7 @@ class Board(object):
                     isFull = False
         #check that if there is avalible position for both side
         haveNoPosition = False
-        if(len(self.get_valid_moves(-1)) == 0 or len(self.get_valid_moves(1)) == 0):
+        if len(self.get_valid_moves(self.currentTurn)) == 0:
             haveNoPosition = True
 
         if isFull or haveNoPosition:
@@ -300,6 +300,8 @@ class Game(object):
                 elif self.board.map[x][y] == -1:
                     rect_dst = pygame.Rect(BOARDX + x*PIECEWIDTH, BOARDY + y*PIECEHEIGHT, PIECEWIDTH, PIECEHEIGHT)
                     self.windowSurface.blit(self.white_image, rect_dst, self.white_rect)
+        self.board.get_score
+        self.board.set_caption("Reversi -- current turn: " + self.board.readableTurns[str(self.board.currentTurn)] + ". black: " + str(self.board.get_score()['black']) + ", white: "+ str(self.board.get_score()['white']))
     
 
     def terminate(self):
